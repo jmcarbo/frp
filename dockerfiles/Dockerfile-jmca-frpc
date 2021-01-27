@@ -1,0 +1,22 @@
+FROM golang:1.16beta1-alpine3.13 AS build-env
+
+COPY . /frp/
+WORKDIR /frp/
+
+ENV LDFLAGS -s -w
+RUN  CGO_ENABLED=0 go build -trimpath -ldflags "$LDFLAGS" -o bin/frps ./cmd/frps
+RUN  CGO_ENABLED=0 go build -trimpath -ldflags "$LDFLAGS" -o bin/frpc ./cmd/frpc
+RUN apk --no-cache add bash git gcc musl-dev
+
+
+FROM alpine:3.13
+LABEL maintainer="jmcarbo@gmail.com"
+
+RUN apk --no-cache add ca-certificates
+
+
+WORKDIR /app
+
+COPY --from=build-env /frp/bin/frpc /usr/bin
+
+ENTRYPOINT ["/usr/bin/frpc"]

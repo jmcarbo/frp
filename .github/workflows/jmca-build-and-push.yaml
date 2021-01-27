@@ -87,5 +87,5 @@ jobs:
       - 
         name: Build docker images
         run: |
-          docker buildx build --push --platform linux/amd64,linux/arm64 -t jmcarbo/frpc:${{ steps.get_version.outputs.VERSION }} --file dockerfiles/Dockerfile-for-frpc .
-          docker buildx build --push --platform linux/amd64,linux/arm64 -t jmcarbo/frps:${{ steps.get_version.outputs.VERSION }} --file dockerfiles/Dockerfile-for-frps .
+          docker buildx build --push --platform linux/amd64,linux/arm64 -t jmcarbo/frpc:${{ steps.get_version.outputs.VERSION }} --file dockerfiles/Dockerfile-jmca-frpc .
+          docker buildx build --push --platform linux/amd64,linux/arm64 -t jmcarbo/frps:${{ steps.get_version.outputs.VERSION }} --file dockerfiles/Dockerfile-jmca-frps .
