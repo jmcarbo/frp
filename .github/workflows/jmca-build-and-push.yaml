@@ -1,0 +1,90 @@
+name: jmca build multiplatform images
+
+on:
+  release:
+    types: [ created ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag'
+        required: true
+        default: 'test'
+
+jobs:
+  binary:
+    name: Build Golang project
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Set up Go 1.x
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+      -
+        run: go version
+      -
+        name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+      -
+        name: Build
+        run: make build
+      -
+        name: Archive artifacts for frpc
+        uses: actions/upload-artifact@v1
+        with:
+          name: frpc
+          path: bin/frpc
+      -
+        name: Archive artifacts for frps
+        uses: actions/upload-artifact@v1
+        with:
+          name: frps
+          path: bin/frps
+  buildx:
+    runs-on: ubuntu-latest
+    needs: binary
+    steps:
+      -
+        name: Checkout
+        uses: actions/checkout@v2
+      -
+        name: Login to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      -
+        name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: arm64,amd64
+      -
+        name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+      # download binaries of frpc and frps
+      -
+        name: Download binary of frpc
+        uses: actions/download-artifact@v2
+        with:
+          name: frpc
+          path: bin/frpc
+      -
+        name: Download binary of frps
+        uses: actions/download-artifact@v2
+        with:
+          name: frps
+          path: bin/frps
+      # get image tag name
+      - id: get_version
+        name: Get Image Tag Name
+        run: |
+          if [ x${{ github.event.inputs.tag }} == x"" ]; then
+            echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+          else
+            echo ::set-output name=VERSION::"${{github.event.inputs.tag}}"
+          fi
+      - 
+        name: Build docker images
+        run: docker buildx build --push --platform linux/amd64,linux/arm64 -t jmcarbo/frpc:${{ steps.get_version.outputs.VERSION }} --file dockerfiles/Dockerfile-for-frpc .
+        run: docker buildx build --push --platform linux/amd64,linux/arm64 -t jmcarbo/frps:${{ steps.get_version.outputs.VERSION }} --file dockerfiles/Dockerfile-for-frps .
