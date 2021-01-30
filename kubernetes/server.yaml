@@ -1,0 +1,97 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: frp
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  namespace: frp
+  name: limits
+spec:
+  limits:
+  - type: Container
+    default:
+      cpu: 500m
+      memory: 300Mi
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frps-config
+  namespace: frp
+  labels: 
+    app: frps
+data:
+  frps.conf: |
+    # frps.ini
+    [common]
+    bind_port = 8080
+    vhost_http_port = 80
+    vhost_https_port = 443
+---
+apiVersion: apps/v1
+#kind: Deployment
+kind: DaemonSet
+metadata:
+  name: app-deployment
+  namespace: frp
+spec:
+  #replicas: 1
+  selector:
+    matchLabels:
+      app: app-backend
+  template:
+    metadata:
+      labels:
+        app: app-backend
+    spec:
+        hostNetwork: true
+        containers:
+        - image: jmcarbo/frps:v0.35.1
+          name: frps
+          imagePullPolicy: Always
+          args:
+          - "-c"
+          - "/etc/frp/frps.conf"
+          volumeMounts:
+            - name: frps-config
+              mountPath: "/etc/frp"
+              readOnly: true
+        volumes:
+        - name: frps-config
+          configMap:
+            name: frps-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: frp
+  name: app
+spec:
+  selector:
+    app: app-backend
+  type: NodePort
+  ports:
+    - name: http
+      targetPort: http
+      protocol: TCP
+      port: 80
+      nodePort: 30780
+    - name: https
+      targetPort: https
+      protocol: TCP
+      port: 443
+      nodePort: 30743
+    - name: bind
+      targetPort: bind
+      protocol: TCP
+      port: 7000
+      nodePort: 30700
+    - name: dashboard
+      targetPort: dashboard
+      protocol: TCP
+      port: 7500
+      nodePort: 30781
+

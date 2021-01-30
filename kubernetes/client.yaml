@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frp-config
+  namespace: frp
+  labels: 
+    app: frpc
+data:
+  frp.conf: |
+    [common]
+    server_addr = 1.1.1.188
+    server_port = 8080
+    
+    [demo-service]
+    type = tcp
+    local_ip = 10.17.11.4
+    local_port = 22
+    remote_port = 6022
+
+    [kube-service]
+    type = https
+    local_ip = 10.17.11.3
+    local_port = 6443
+    custom_domains = bla.bla.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frpc
+  namespace: frp
+  labels:
+    app: frpc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frpc
+  template:
+    metadata:
+      labels:
+        app: frpc
+    spec:
+      containers:
+        - name: frpc
+          image: jmcarbo/frpc:v0.35.1
+          args:
+            - -c
+            - /etc/frp/frp.conf
+          volumeMounts:
+            - name: frp-config
+              mountPath: "/etc/frp"
+              readOnly: true
+      volumes:
+        - name: frp-config
+          configMap:
+            name: frp-config
