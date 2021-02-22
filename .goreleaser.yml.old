@@ -1,31 +1,3 @@
-# This is an example .goreleaser.yml file with some sane defaults.
-# Make sure to check the documentation at http://goreleaser.com
-before:
-  hooks:
-    # You may remove this if you don't use go modules.
-    - go mod download
-    # you may remove this if you don't need go generate
-    #- go generate ./...
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      windows: Windows
-      386: i386
-      amd64: x86_64
-    builds:
-      - frps
-      - frpc
-checksum:
-  name_template: 'checksums.txt'
-snapshot:
-  name_template: "{{ .Tag }}-next"
-changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^docs:'
-      - '^test:'
 builds:
   - id: "frps"
     dir: "cmd/frps"
@@ -51,6 +23,8 @@ builds:
       - arm
       - arm64
     dir: "cmd/frpc"
+checksum:
+  name_template: 'checksums.txt'
 release:
   # Same as for github
   # Note: it can only be one: either github, gitlab or gitea
