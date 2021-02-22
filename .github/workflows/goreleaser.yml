@@ -2,6 +2,11 @@ name: goreleaser
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag'
+        required: true
+        default: 'test'
 
 jobs:
   goreleaser:
@@ -15,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.15
+          go-version: 1.16
 
       - name: Make All
         run: |
